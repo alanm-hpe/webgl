@@ -12,9 +12,6 @@ const numFrames = 100; // num of frames to record
 let recording = false;
 let recordedFrames = 0;
 
-// Needed for WebGL/3D
-let pixels = new Uint8Array(cwidth * cheight * 4 * 4);
-
 let count = 0;
 
 function preload() {
@@ -22,7 +19,7 @@ function preload() {
 }
 
 function setup() {
-    if (dimension === '3D') {
+    if (dimension == '3D') {
         createCanvas(cwidth, cheight, WEBGL);
     } else {
         createCanvas(cwidth, cheight);
@@ -52,12 +49,13 @@ function draw() {
     if (recording) {
         console.log('recording')
         if (dimension == '3D') {
-            canvas.getContext('webgl').readPixels(0,0, encoder.width, encoder.height, canvas.getContext('webgl').RGBA, canvas.getContext('webgl').UNSIGNED_BYTE, pixels)
-            console.log(new ImageData(Uint8ClampedArray.from(pixels), encoder.width, encoder.height))
-            encoder.addFrameRgba(new ImageData(Uint8ClampedArray.from(pixels), encoder.width, encoder.height).data)
-
+            let offscreenCanvas = document.createElement("canvas")
+            offscreenCanvas.width = encoder.width
+            offscreenCanvas.height = encoder.height
+            let ctx = offscreenCanvas.getContext("2d")
+            ctx.drawImage(canvas,0,0)
+            encoder.addFrameRgba(ctx.getImageData(0, 0, encoder.width, encoder.height).data)
         } else {
-            // replace "drawingContext" with the equivalent HTML5 "canvas.getContext('2d')"
             encoder.addFrameRgba(canvas.getContext('2d').getImageData(0, 0, encoder.width, encoder.height).data);
         }
         recordedFrames++
@@ -86,8 +84,8 @@ function runEncoder(){
         encoder.outputFilename = 'test'
         encoder.pixelDensity = 2
         encoder.drawingContext = "webgl"
-        encoder.width = cwidth * 2
-        encoder.height = cheight * 2
+        encoder.width = cwidth
+        encoder.height = cheight
         encoder.frameRate = frate
         encoder.kbps = 50000 // video quality
         encoder.groupOfPictures = 10 // lower if you have fast actions.
