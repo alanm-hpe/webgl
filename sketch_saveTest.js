@@ -6,10 +6,14 @@ let tFont = [];
 
 let encoder;
 
+const dimension = "3D";
 const frate = 30; // frame rate
 const numFrames = 100; // num of frames to record
 let recording = false;
 let recordedFrames = 0;
+
+// Needed for WebGL/3D
+let pixels = new Uint8Array(cwidth * cheight * 4 * 4);
 
 let count = 0;
 
@@ -18,8 +22,11 @@ function preload() {
 }
 
 function setup() {
-    createCanvas(cwidth, cheight, WEBGL);        // 3D, WEBGL version, does not work
-    // createCanvas(cwidth, cheight);                  // 2D version, does work
+    if (dimension === '3D') {
+        createCanvas(cwidth, cheight, WEBGL);
+    } else {
+        createCanvas(cwidth, cheight);
+    }
 
     runEncoder();
 
@@ -34,14 +41,25 @@ function draw() {
     textAlign(CENTER, CENTER)
     textFont(tFont[0]);
     fill(0);
-    text(count, 0, 0);                          // center text in 3D
-    // text(count, width/2, height/2)           // center text in 2D
+    if (dimension == '3D') {
+        text(count, 0, 0)
+    } else {
+        text(count, width/2, height/2)
+    }
     count++
 
     // keep adding new frame
     if (recording) {
         console.log('recording')
-        encoder.addFrameRgba(drawingContext.getImageData(0, 0, encoder.width, encoder.height).data);        // This seems to be the problem line
+        if (dimension == '3D') {
+            canvas.getContext('webgl').readPixels(0,0, encoder.width, encoder.height, canvas.getContext('webgl').RGBA, canvas.getContext('webgl').UNSIGNED_BYTE, pixels)
+            console.log(new ImageData(Uint8ClampedArray.from(pixels), encoder.width, encoder.height))
+            encoder.addFrameRgba(new ImageData(Uint8ClampedArray.from(pixels), encoder.width, encoder.height).data)
+
+        } else {
+            // replace "drawingContext" with the equivalent HTML5 "canvas.getContext('2d')"
+            encoder.addFrameRgba(canvas.getContext('2d').getImageData(0, 0, encoder.width, encoder.height).data);
+        }
         recordedFrames++
     }
     // finalize encoding and export as mp4
